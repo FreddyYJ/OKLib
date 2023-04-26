@@ -31,7 +31,11 @@ hs_err_pid*
 .vscode
 
 # output dirs
-inv_infer_output
-inv_verify_output
-oklogs
-trace_output
+inv_infer_output/
+inv_infer_input/
+inv_verify_output/
+inv_verify_input/
+trace_output/
+oklogs/
+tmp/
+buggy/
