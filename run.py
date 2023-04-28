@@ -38,6 +38,8 @@ LOG4J_CONF=f"{ROOTDIR}/conf/log4j.properties"
 INV_OUT=f"{ROOTDIR}/inv_infer_output"
 TRACE_OUT=f"{ROOTDIR}/trace_output"
 CHECK_OUT=f"{ROOTDIR}/inv_checktrace_output"
+D4J_DIR=f"{ROOTDIR}/d4j"
+FULL_CLASS_PATH = ""
 
 def execute(cmd: str, dir: str) -> int:
   print(f"Executing: {cmd} @ {dir}")
@@ -81,65 +83,104 @@ def write_conf(conf: Dict[str, str], conf_file: str):
     for k, v in conf.items():
       f.write(f"{k}={v}\n")
 
-def init(bugid: str, buggy_dir: str):
-  os.makedirs(buggy_dir, exist_ok=True)
+def init(bugid: str, workdir: str, is_fixed: bool):
+  os.makedirs(workdir, exist_ok=True)
   proj, bid = bugid.split("-")
-  workdir = f"{buggy_dir}/{proj}-{bid}"
-  execute(f"defects4j checkout -p {proj} -v {bid}b -w {workdir}", ROOTDIR)
+  # workdir = f"{buggy_dir}/{proj}-{bid}"
+  version = bid
+  if is_fixed:
+    version = f"{bid}f"
+  else:
+    version = f"{bid}b"
+  savedir = f"{D4J_DIR}/{bugid}"
+  os.makedirs(savedir, exist_ok=True)
+  execute(f"defects4j checkout -p {proj} -v {version} -w {workdir}", ROOTDIR)
   execute(f"defects4j compile", workdir)
   execute(f"defects4j test", workdir)
-  execute(f"defects4j export -p dir.bin.classes -o {workdir}/builddir.txt", workdir)
-  execute(f"defects4j export -p dir.bin.tests -o {workdir}/testbuilddir.txt", workdir)
-  execute(f"defects4j export -p cp.test -o {workdir}/cp.txt", workdir)
-  execute(f"defects4j export -p dir.src.classes -o {workdir}/srcdir.txt", workdir)
-  execute(f"defects4j export -p tests.trigger -o tests.txt", workdir)
-  execute(f"defects4j export -p classes.modified -o {workdir}/modified.txt", workdir)
+  if is_fixed:
+    execute(f"defects4j export -p dir.bin.classes -o {savedir}/builddir.txt", workdir)
+    execute(f"defects4j export -p dir.bin.tests -o {savedir}/testbuilddir.txt", workdir)
+    execute(f"defects4j export -p cp.test -o {savedir}/cp.txt", workdir)
+    execute(f"defects4j export -p dir.src.classes -o {savedir}/srcdir.txt", workdir)
+    execute(f"defects4j export -p tests.trigger -o {savedir}/tests.txt", workdir)
+    execute(f"defects4j export -p classes.modified -o {savedir}/modified.txt", workdir)
 
 def gentrace(bugid: str, work_dir: str):
+  print("Generating traces...")
+  init(bugid, work_dir, True)
+  proj, bid = bugid.split("-")
   full_class_path = f"{OK_LIB}"
-  with open(os.path.join(work_dir, "builddir.txt"), "r") as f:
+  savedir = f"{D4J_DIR}/{bugid}"
+  with open(os.path.join(savedir, "builddir.txt"), "r") as f:
     content = f.read().strip()
     full_class_path = f"{full_class_path}:{work_dir}/{content}"
-  with open(os.path.join(work_dir, "testbuilddir.txt"), "r") as f:
+  with open(os.path.join(savedir, "testbuilddir.txt"), "r") as f:
     content = f.read().strip()
     full_class_path = f"{full_class_path}:{work_dir}/{content}"
-  test_set = set()
+  FULL_CLASS_PATH = full_class_path
+  test_dict = dict()
   tests = list()
-  with open(os.path.join(work_dir, "tests.txt"), "r") as f:
+  test_all = list()
+  test_class = ""
+  test_method = ""
+  with open(os.path.join(savedir, "tests.txt"), "r") as f:
     for line in f.readlines():
+      test_all.append(line.strip())
       test = line.strip().split("::")[0]
-      if test not in test_set:
-        test_set.add(test)
+      if test not in test_dict:
+        test_class = test
+        test_method = line.strip().split("::")[1]
+        break
+        test_dict[test] = list()
         tests.append(test)
+      test_dict[test].append(line.strip().split("::")[1])
   # gentrace_test 
   diff_file_list = ""
   test_trace_prefix = f"{bugid}"
-  with open(os.path.join(work_dir, "modified.txt"), "r") as f:
+  with open(os.path.join(savedir, "modified.txt"), "r") as f:
     for line in f.readlines():
       classname = line.strip()
       if '$' in classname:
         classname = classname[:classname.index('$')]
       filename = f"{classname.replace('.', '/')}.java"
       diff_file_list += f" {filename}"
-  patchstate = "unpatched"
-  conf_file_path = os.path.join(work_dir, "ok.properties")
+  conf_file_path = os.path.join(savedir, "ok.properties")
   conf = read_conf(os.path.join(ROOTDIR, "conf", "samples", "d4j-sample.properties"))
   conf[SYSTEM_DIR_PATH_KEY] = work_dir
   conf[SYSTEM_PACKAGE_PREFIX_KEY] = get_package_prefix(bugid)
+  # conf[TEST_CLASS_NAME_REGEX_KEY] = f"[{'|'.join(tests)}]"
   write_conf(conf, conf_file_path)
-  cmd = f"timeout 10m java -cp {full_class_path} -Xmx8g -Dok.testname={tests[0]} -Dok.invmode=dump " \
+  patchstate = "patched"
+  cmd = f"timeout 10m java -cp {FULL_CLASS_PATH} -Xmx8g -Dok.testname={test_class} -Dok.testmethod={test_method} -Dok.invmode=dump " \
         f"-Dlog4j.configuration={LOG4J_CONF} -Dok.patchstate={patchstate} " \
         f"-Dok.conf={conf_file_path} -Dok.filediff=\"{diff_file_list}\" " \
         f"-Dok.ok_root_abs_path={ROOTDIR} -Dok.target_system_abs_path={work_dir} -Dok.test_trace_prefix={test_trace_prefix} " \
         f"-Dok.ticket_id={bugid} oathkeeper.engine.tester.TestEngine"
   execute(cmd, ROOTDIR)
-  
+  # git reset --hard
+  init(bugid, work_dir, False)
+  patchstate = "unpatched"
+  cmd = f"timeout 10m java -cp {FULL_CLASS_PATH} -Xmx8g -Dok.testname={test_class} -Dok.testmethod={test_method} -Dok.invmode=dump " \
+        f"-Dlog4j.configuration={LOG4J_CONF} -Dok.patchstate={patchstate} " \
+        f"-Dok.conf={conf_file_path} -Dok.filediff=\"{diff_file_list}\" " \
+        f"-Dok.ok_root_abs_path={ROOTDIR} -Dok.target_system_abs_path={work_dir} -Dok.test_trace_prefix={test_trace_prefix} " \
+        f"-Dok.ticket_id={bugid} oathkeeper.engine.tester.TestEngine"
+  execute(cmd, ROOTDIR)
+
+def infer(bugid: str, work_dir: str):
+  print("Infer")
+  test_trace_prefix = f"{bugid}"
+  conf_file_path = os.path.join(work_dir, "ok.properties")
+  cmd = f"java -cp {FULL_CLASS_PATH} -Dok.conf={conf_file_path} -Dok.ok_root_abs_path={ROOTDIR} " \
+        f"-Dok.target_system_abs_path={work_dir} -Dok.ticket_id={bugid} " \
+        f"-Dok.ticket_id={bugid} -Dok.template_version={1}" \
+        f"oathkeeper.engine.InferEngine {test_trace_prefix}"
+
 def main(args: List[str]):
   print(f"Start {args}")
   bugid = args[1]
   # init
   buggy_dir = os.path.join(ROOTDIR, "buggy")
-  init(bugid, buggy_dir)
   # gentrace
   work_dir = os.path.join(buggy_dir, bugid)
   gentrace(bugid, work_dir)

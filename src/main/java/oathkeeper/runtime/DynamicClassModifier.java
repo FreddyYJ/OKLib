@@ -198,6 +198,7 @@ public class DynamicClassModifier {
         String[] exclude_class_list = ConfigManager.config.getStringArray(ConfigManager.EXCLUDE_CLASS_LIST_KEY);
         for(String clazz:exclude_class_list)
         {
+            if (clazz.equals("")) continue;
             List<String> result = new ArrayList<>();
             for(String s : opInstClasses)
                 if(s.contains(clazz))
@@ -598,14 +599,18 @@ public class DynamicClassModifier {
     {
         ClassPool pool = ClassPool.getDefault();
         String testName = System.getProperty("ok.testname");
+        String methodName = System.getProperty("ok.testmethod");
         int errCounters = 0;
         {
             try {
                 CtClass cc = pool.get(testName);
                 cc.defrost();
 
-                for(CtMethod m: cc.getMethods()){
-                    if (!m.hasAnnotation("org.junit.Test")) {
+                for (CtMethod m : cc.getMethods()) {
+                    if (methodName == null && !m.hasAnnotation("org.junit.Test")) {
+                        continue;
+                    }
+                    if (methodName != null && !m.getName().equals(methodName)) {
                         continue;
                     }
                     System.out.println("insert marker at "+m.getLongName());
