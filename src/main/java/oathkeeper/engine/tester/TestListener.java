@@ -16,10 +16,14 @@ public class TestListener extends RunListener {
     }
 
     public void testStarted(Description description) {
+        if (System.getProperty("ok.testmethod") != null) {
+            if (!description.getMethodName().equals(System.getProperty("ok.testmethod")))
+                return;
+        }
         System.out.println("Test " + description.getClassName() + ":" + description.getMethodName() + " started");
         String testName = description.getClassName() + "@" + description.getMethodName();
-        if(System.getProperty("ok.invmode").equals("dump") && !testName.contains(System.getProperty("ok.test_trace_prefix")))
-            throw new RuntimeException("Skip unintended tests.");
+        // if(System.getProperty("ok.invmode").equals("dump") && !testName.contains(System.getProperty("ok.test_trace_prefix")))
+        //     throw new RuntimeException("Skip unintended tests.");
         OKHelper.getInstance().setLastTestName(testName);
 
         EventTracer.instance = new EventTracer();
@@ -45,11 +49,14 @@ public class TestListener extends RunListener {
     }
 
     public void testFinished(Description description) {
-
+        if (System.getProperty("ok.testmethod") != null) {
+            if (!description.getMethodName().equals(System.getProperty("ok.testmethod")))
+                return;
+        }
         String testName = description.getClassName() + "@" + description.getMethodName();
         System.out.println("Test " + description.getClassName() + ":" + description.getMethodName() + " ended");
-        if(System.getProperty("ok.invmode").equals("dump") && !testName.contains(System.getProperty("ok.test_trace_prefix")))
-            throw new RuntimeException("Skip unintended tests.");
+        // if(System.getProperty("ok.invmode").equals("dump") && !testName.contains(System.getProperty("ok.test_trace_prefix")))
+        //     throw new RuntimeException("Skip unintended tests.");
 
         if(System.getProperty("ok.invmode").equals("dump"))
         {
