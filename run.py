@@ -106,7 +106,7 @@ def init(bugid: str, workdir: str, is_fixed: bool):
     execute(f"defects4j export -p classes.modified -o {savedir}/modified.txt", workdir)
 
 def gentrace(bugid: str, work_dir: str):
-  print("Generating traces...")
+  print("################## Generating traces...")
   init(bugid, work_dir, True)
   proj, bid = bugid.split("-")
   full_class_path = f"{OK_LIB}"
@@ -117,6 +117,7 @@ def gentrace(bugid: str, work_dir: str):
   with open(os.path.join(savedir, "testbuilddir.txt"), "r") as f:
     content = f.read().strip()
     full_class_path = f"{full_class_path}:{work_dir}/{content}"
+  global FULL_CLASS_PATH
   FULL_CLASS_PATH = full_class_path
   test_dict = dict()
   tests = list()
@@ -168,13 +169,48 @@ def gentrace(bugid: str, work_dir: str):
   execute(cmd, ROOTDIR)
 
 def infer(bugid: str, work_dir: str):
-  print("Infer")
+  print("################ Infer")
+  savedir = f"{D4J_DIR}/{bugid}"
+  test_class = ""
+  test_method = ""
+  with open(os.path.join(savedir, "tests.txt"), "r") as f:
+    for line in f.readlines():
+      test = line.strip().split("::")[0]
+      test_class = test
+      test_method = line.strip().split("::")[1]
+
   test_trace_prefix = f"{bugid}"
-  conf_file_path = os.path.join(work_dir, "ok.properties")
-  cmd = f"java -cp {FULL_CLASS_PATH} -Dok.conf={conf_file_path} -Dok.ok_root_abs_path={ROOTDIR} " \
+  conf_file_path = os.path.join(savedir, "ok.properties")
+  cmd = f"timeout 10m java -cp {FULL_CLASS_PATH} -Dok.conf={conf_file_path} -Dok.ok_root_abs_path={ROOTDIR} " \
         f"-Dok.target_system_abs_path={work_dir} -Dok.ticket_id={bugid} " \
-        f"-Dok.ticket_id={bugid} -Dok.template_version={1}" \
-        f"oathkeeper.engine.InferEngine {test_trace_prefix}"
+        f"-Dok.template_version= " \
+        f"oathkeeper.engine.InferEngine {test_class}"
+  execute(cmd, ROOTDIR)
+
+def verify(bugid: str, work_dir: str):
+  print("########################## Verify")
+  savedir = f"{D4J_DIR}/{bugid}"
+  test_class = ""
+  test_method = ""
+  test_dict = dict()
+  tests = list()
+  test_all = list()
+  with open(os.path.join(savedir, "tests.txt"), "r") as f:
+    for line in f.readlines():
+      test_all.append(line.strip())
+      test = line.strip().split("::")[0]
+      if test not in test_dict:
+        test_class = test
+        test_method = line.strip().split("::")[1]
+        break
+  test_trace_prefix = f"{bugid}"
+  conf_file_path = os.path.join(savedir, "ok.properties")
+  cmd = f"timeout 10m java -cp {FULL_CLASS_PATH} -Dlog4j.configuration={LOG4J_CONF} " \
+        f"-Dok.conf={conf_file_path} -Dok.ok_root_abs_path={ROOTDIR} -Dok.patchstate=patched " \
+        f"-Dok.invfile={test_class} -Dok.invmode=verify -Dok.testmethod={test_method} -Dok.target_system_abs_path={work_dir} " \
+        f"-Dok.ticket_id={bugid} -Dok.verify_test_package= " \
+        f"oathkeeper.engine.tester.TestEngine {test_class}"
+  execute(cmd, ROOTDIR)
 
 def main(args: List[str]):
   print(f"Start {args}")
@@ -185,7 +221,10 @@ def main(args: List[str]):
   work_dir = os.path.join(buggy_dir, bugid)
   gentrace(bugid, work_dir)
   # infer
+  infer(bugid, work_dir)
   # verify
+  verify(bugid, work_dir)
+
 
 if __name__ == "__main__":
   main(sys.argv)
