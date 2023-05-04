@@ -40,3 +40,5 @@ oklogs/
 tmp/
 buggy/
 d4j/
+test_traces/
+result/
