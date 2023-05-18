@@ -426,7 +426,7 @@ public class DynamicClassModifier {
                 continue;
             }
             succMethodCounter += localCounter;
-            System.out.println("prepare for " + cName);
+            // System.out.println("prepare for " + cName);
         }
 
         System.out.println("succMethodCounter" + succMethodCounter + " failClassCounter" + failClassCounter);
@@ -577,7 +577,7 @@ public class DynamicClassModifier {
                 continue;
             }
             succMethodCounter += localCounter;
-            System.out.println("prepare for " + cName);
+            // System.out.println("prepare for " + cName);
         }
 
         System.out.println("succMethodCounter" + succMethodCounter + " failClassCounter" + failClassCounter);
@@ -588,7 +588,7 @@ public class DynamicClassModifier {
             try {
                 ctClass.toClass();
             } catch (Exception ex) {
-                ex.printStackTrace();
+                // ex.printStackTrace();
             }
         }
         System.out.println("Instrument classes finished");

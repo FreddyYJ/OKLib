@@ -152,7 +152,7 @@ def gentrace(bugid: str, work_dir: str):
   # conf[TEST_CLASS_NAME_REGEX_KEY] = f"[{'|'.join(tests)}]"
   write_conf(conf, conf_file_path)
   patchstate = "patched"
-  cmd = f"timeout 10m java -cp {FULL_CLASS_PATH} -Xmx8g -Dok.testname={test_class} -Dok.testmethod={test_method} -Dok.invmode=dump " \
+  cmd = f"timeout 60m java -cp {FULL_CLASS_PATH} -Xmx8g -Dok.testname={test_class} -Dok.testmethod={test_method} -Dok.invmode=dump " \
         f"-Dlog4j.configuration={LOG4J_CONF} -Dok.patchstate={patchstate} " \
         f"-Dok.conf={conf_file_path} -Dok.filediff=\"{diff_file_list}\" " \
         f"-Dok.ok_root_abs_path={ROOTDIR} -Dok.target_system_abs_path={work_dir} -Dok.test_trace_prefix={test_trace_prefix} " \
@@ -161,7 +161,7 @@ def gentrace(bugid: str, work_dir: str):
   # git reset --hard
   init(bugid, work_dir, False)
   patchstate = "unpatched"
-  cmd = f"timeout 10m java -cp {FULL_CLASS_PATH} -Xmx8g -Dok.testname={test_class} -Dok.testmethod={test_method} -Dok.invmode=dump " \
+  cmd = f"timeout 60m java -cp {FULL_CLASS_PATH} -Xmx8g -Dok.testname={test_class} -Dok.testmethod={test_method} -Dok.invmode=dump " \
         f"-Dlog4j.configuration={LOG4J_CONF} -Dok.patchstate={patchstate} " \
         f"-Dok.conf={conf_file_path} -Dok.filediff=\"{diff_file_list}\" " \
         f"-Dok.ok_root_abs_path={ROOTDIR} -Dok.target_system_abs_path={work_dir} -Dok.test_trace_prefix={test_trace_prefix} " \
@@ -181,7 +181,7 @@ def infer(bugid: str, work_dir: str):
 
   test_trace_prefix = f"{bugid}"
   conf_file_path = os.path.join(savedir, "ok.properties")
-  cmd = f"timeout 10m java -cp {FULL_CLASS_PATH} -Dok.conf={conf_file_path} -Dok.ok_root_abs_path={ROOTDIR} " \
+  cmd = f"timeout 60m java -cp {FULL_CLASS_PATH} -Dok.conf={conf_file_path} -Dok.ok_root_abs_path={ROOTDIR} " \
         f"-Dok.target_system_abs_path={work_dir} -Dok.ticket_id={bugid} " \
         f"-Dok.template_version= " \
         f"oathkeeper.engine.InferEngine {test_class}"
@@ -205,7 +205,7 @@ def verify(bugid: str, work_dir: str):
         break
   test_trace_prefix = f"{bugid}"
   conf_file_path = os.path.join(savedir, "ok.properties")
-  cmd = f"timeout 10m java -cp {FULL_CLASS_PATH} -Dlog4j.configuration={LOG4J_CONF} " \
+  cmd = f"timeout 60m java -cp {FULL_CLASS_PATH} -Dlog4j.configuration={LOG4J_CONF} " \
         f"-Dok.conf={conf_file_path} -Dok.ok_root_abs_path={ROOTDIR} -Dok.patchstate=patched " \
         f"-Dok.invfile={test_class} -Dok.invmode=verify -Dok.testmethod={test_method} -Dok.target_system_abs_path={work_dir} " \
         f"-Dok.ticket_id={bugid} -Dok.verify_test_package= " \
