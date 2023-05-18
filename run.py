@@ -47,22 +47,29 @@ def execute(cmd: str, dir: str) -> int:
   print(f"Exit code: {proc.returncode}")
   return proc.returncode
 
-def get_package_prefix(bugid: str):
+def get_package_prefix(bugid: str) -> Tuple[str, str]:
   proj, bid = bugid.split("-")
-  prefix = ""
+  prefix = ".*"
+  test_regex = ""
   if proj == "Chart":
     prefix = "org.jfree."
+    test_regex = ".*Tests$"
   elif proj == "Closure":
     prefix = "com.google."
+    test_regex = ".*(Test|TestCase)$"
   elif proj == "Lang":
     prefix = "org.apache.commons.lang3."
+    test_regex = ".*Test$"
   elif proj == "Math":
     prefix = "org.apache.commons.math3."
+    test_regex = ".*Test$"
   elif proj == "Mockito":
     prefix = "org.mockito."
+    test_regex = ".*Test$"
   elif proj == "Time":
     prefix = "org.joda.time."
-  return prefix
+    test_regex = "^Test.*"
+  return prefix, test_regex
 
 def read_conf(conf_file: str) -> Dict[str, str]:
   result = dict()
@@ -148,7 +155,9 @@ def gentrace(bugid: str, work_dir: str):
   conf_file_path = os.path.join(savedir, "ok.properties")
   conf = read_conf(os.path.join(ROOTDIR, "conf", "samples", "d4j-sample.properties"))
   conf[SYSTEM_DIR_PATH_KEY] = work_dir
-  conf[SYSTEM_PACKAGE_PREFIX_KEY] = get_package_prefix(bugid)
+  prefix, test_regex = get_package_prefix(bugid)
+  conf[SYSTEM_PACKAGE_PREFIX_KEY] = prefix
+  conf[TEST_CLASS_NAME_REGEX_KEY] = test_regex
   # conf[TEST_CLASS_NAME_REGEX_KEY] = f"[{'|'.join(tests)}]"
   write_conf(conf, conf_file_path)
   patchstate = "patched"
