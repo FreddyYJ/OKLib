@@ -249,10 +249,10 @@ public class DynamicClassModifier {
             }
         }
         System.out.println("Instrument "+total+" fields");
-        for(String fieldName: stateFields.keySet())
-        {
-            System.out.println("Instrument field "+fieldName);
-        }
+        // for(String fieldName: stateFields.keySet())
+        // {
+        //     System.out.println("Instrument field "+fieldName);
+        // }
     }
 
 
