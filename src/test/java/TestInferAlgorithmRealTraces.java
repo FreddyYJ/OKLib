@@ -52,7 +52,7 @@ public class TestInferAlgorithmRealTraces {
         int implySize_v1=0, protectedSize_v1=0, happenbeforeSize_v1 = 0;
         for(Invariant inv:invs)
         {
-            if(inv.template.getTemplateName().contains("Imply"))
+            if (inv.template.getTemplateName().contains("Imply"))
                 implySize++;
             if(inv.template.getTemplateName().contains("ProtectedBy"))
                 protectedSize++;
@@ -61,16 +61,16 @@ public class TestInferAlgorithmRealTraces {
         }
         for(Invariant inv:invs_v1)
         {
-            if(inv.template_v1.getTemplateName().contains("Imply"))
+            if (inv.template_v1.getTemplateName().contains("Imply"))
                 implySize_v1++;
             if(inv.template_v1.getTemplateName().contains("ProtectedBy"))
                 protectedSize_v1++;
             if(inv.template_v1.getTemplateName().contains("HappenBefore"))
                 happenbeforeSize_v1++;
         }
-        Assert.assertEquals("v1 and v2 result should size match",implySize,implySize_v1);
-        Assert.assertEquals("v1 and v2 result should size match",protectedSize,protectedSize_v1);
-        Assert.assertEquals("v1 and v2 result should size match",happenbeforeSize,happenbeforeSize_v1);
+        Assert.assertEquals("1 v1 and v2 result should size match",implySize,implySize_v1);
+        Assert.assertEquals("2 v1 and v2 result should size match",protectedSize,protectedSize_v1);
+        Assert.assertEquals("3 v1 and v2 result should size match",happenbeforeSize,happenbeforeSize_v1);
     }
 
 }

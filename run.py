@@ -68,7 +68,7 @@ def get_package_prefix(bugid: str) -> Tuple[str, str]:
     test_regex = ".*Test$"
   elif proj == "Time":
     prefix = "org.joda.time."
-    test_regex = "^Test.*"
+    test_regex = ".*Test.*"
   return prefix, test_regex
 
 def read_conf(conf_file: str) -> Dict[str, str]:
@@ -216,7 +216,7 @@ def verify(bugid: str, work_dir: str):
   conf_file_path = os.path.join(savedir, "ok.properties")
   cmd = f"timeout 60m java -cp {FULL_CLASS_PATH} -Dlog4j.configuration={LOG4J_CONF} " \
         f"-Dok.conf={conf_file_path} -Dok.ok_root_abs_path={ROOTDIR} -Dok.patchstate=patched " \
-        f"-Dok.invfile={test_class} -Dok.invmode=verify -Dok.testmethod={test_method} -Dok.target_system_abs_path={work_dir} " \
+        f"-Dok.invfile={test_class} -Dok.invmode=verify -Dok.target_system_abs_path={work_dir} " \
         f"-Dok.ticket_id={bugid} -Dok.verify_test_package= " \
         f"oathkeeper.engine.tester.TestEngine {test_class}"
   execute(cmd, ROOTDIR)

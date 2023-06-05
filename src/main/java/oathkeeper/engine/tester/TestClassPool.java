@@ -32,11 +32,14 @@ public class TestClassPool {
                 reflections.getSubTypesOf(Object.class);
         for(Class clazz:allClasses)
         {
+            if (clazz.getName().contains("Test")) {
+                System.out.println("Found test class: " + clazz.getName());
+            }
             //skip subclass
-            if(clazz.getName().contains("$"))
-                continue;
+            // if(clazz.getName().contains("$"))
+            //     continue;
 
-            if(!clazz.getSimpleName().matches(regex))
+            if(!clazz.getName().matches(regex))
                 continue;
 
             if (System.getProperty("ok.verify_test_package") != null &&

@@ -19,6 +19,7 @@ public class TemplateManager {
         add(new EventHappenBeforeEventTemplate());
         add(new EventImplyEventTemplate());
         add(new EventProtectedByEventTemplate());
+        add(new EventWeakImpEventTemplate());
 
         //binary-timing
         add(new OpAddTimeInvokeOpTemplate());

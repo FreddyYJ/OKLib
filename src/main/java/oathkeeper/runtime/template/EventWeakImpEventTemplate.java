@@ -9,9 +9,9 @@ import oathkeeper.runtime.invariant.Invariant;
 
 import java.util.*;
 
-public class EventImplyEventTemplate extends Template {
+public class EventWeakImpEventTemplate extends Template {
     public String getTemplateName() {
-        return "EventImplyEventTemplate";
+        return "EventWeakImpEventTemplate";
     }
 
     public int getOperatorSize() {
@@ -20,27 +20,22 @@ public class EventImplyEventTemplate extends Template {
 
     public Invariant genInv(Context context) {
         if(context.left instanceof OpTriggerEvent && context.right instanceof OpTriggerEvent)
-            return new Invariant(new OpImplyOpTemplate(), context);
-        else if(context.left instanceof StateUpdateEvent && context.right instanceof OpTriggerEvent)
-            return new Invariant(new StateChangeImplyOpTemplate(), context);
-        else if(context.left instanceof OpTriggerEvent && context.right instanceof StateUpdateEvent)
-            return new Invariant(new OpImplyStateChangeTemplate(), context);
-        else if(context.left instanceof StateUpdateEvent && context.right instanceof StateUpdateEvent)
-            return new Invariant(new StateChangeImplyStateChangeTemplate(), context);
+            return new Invariant(new OpWeakImpOpTemplate(), context);
         else
             return null;
     }
-
+    
+    /**
+     * p -> q: true
+     * q -> p: true
+     * q -> q: true
+     * p -> p: false
+     */
     public class InferScanner extends Template.InferScanner {
         Map<SemanticEvent, Map<SemanticEvent, Integer>> counterMap = new HashMap<>();
-        Map<SemanticEvent, Map<SemanticEvent, Integer>> newCounterMap = new HashMap<>();
-        Map<SemanticEvent, Integer> occurance = new HashMap<>();
 
         public void prescan(Set<SemanticEvent> eventSet)
         {
-            for (SemanticEvent event : eventSet) {
-                occurance.put(event, 0);
-            }
             for(SemanticEvent event:eventSet)
             {
                 counterMap.put(event, new HashMap<>());
@@ -70,30 +65,20 @@ public class EventImplyEventTemplate extends Template {
         public void scan(SemanticEvent event) {
             //appear before, so we update all counters
             //phase 1:
-            Integer occ = occurance.get(event);
-            occurance.put(event, occ + 1);
-            if (occurance.get(event) >= 1) {
-                for (Map.Entry<SemanticEvent, Integer> entry : counterMap.get(event).entrySet()) {
-                    if (entry.getValue() <= 0) { // p -> p
-                        entry.setValue(entry.getValue() - 1);
-                    } else {
-                        entry.setValue(0);
-                    }
-                }
+            for (Map.Entry<SemanticEvent, Integer> entry : counterMap.get(event).entrySet()) {
+                //if (entry.getValue() >= 0)
+                entry.setValue(entry.getValue() + 1);
             }
-            // for (Map.Entry<SemanticEvent, Integer> entry : counterMap.get(event).entrySet()) {
-            //     //if (entry.getValue() >= 0)
-            //     entry.setValue(entry.getValue() + 1);
-            // }
 
             //phase 2:
             for (SemanticEvent event1 : counterMap.keySet()) {
+                // If same function call (maybe different time), do not discrement counter
                 if (event.equals(event1))
                     continue;
 
                 Integer val = counterMap.get(event1).get(event);
-                if (val >= 0)
-                    counterMap.get(event1).put(event, val + 1); // p -> q is valid when val > 0
+                if (val > 0)
+                    counterMap.get(event1).put(event, val - 1);
             }
         }
 
@@ -104,7 +89,7 @@ public class EventImplyEventTemplate extends Template {
             {
                 for(Map.Entry<SemanticEvent, Integer> subEntry: entry.getValue().entrySet())
                 {
-                    if(subEntry.getValue() > 0)
+                    if(subEntry.getValue()==0)
                     {
                         Invariant inv = genInv(new Context(
                                 entry.getKey(),
