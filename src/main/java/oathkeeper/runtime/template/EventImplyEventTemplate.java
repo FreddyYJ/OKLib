@@ -33,25 +33,15 @@ public class EventImplyEventTemplate extends Template {
 
     public class InferScanner extends Template.InferScanner {
         Map<SemanticEvent, Map<SemanticEvent, Integer>> counterMap = new HashMap<>();
-        Map<SemanticEvent, Map<SemanticEvent, Integer>> newCounterMap = new HashMap<>();
-        Map<SemanticEvent, Integer> occurance = new HashMap<>();
 
-        public void prescan(Set<SemanticEvent> eventSet)
-        {
+        public void prescan(Set<SemanticEvent> eventSet) {
             for (SemanticEvent event : eventSet) {
-                occurance.put(event, 0);
-            }
-            for(SemanticEvent event:eventSet)
-            {
                 counterMap.put(event, new HashMap<>());
             }
 
-            for(SemanticEvent event:eventSet)
-            {
-                for(SemanticEvent event1: eventSet)
-                {
-                    if(!event.equals(event1))
-                    {
+            for (SemanticEvent event : eventSet) {
+                for (SemanticEvent event1 : eventSet) {
+                    if (!event.equals(event1)) {
                         counterMap.get(event).put(event1, 0);
                         counterMap.get(event1).put(event, 0);
                     }
@@ -59,58 +49,44 @@ public class EventImplyEventTemplate extends Template {
             }
         }
 
-        //structure look like
-        //counterMap -------->  1 ---------> 2
-        //                                   3
-        //                                  ...
-        //                      2 ---------> 1
-        //                                   3
-        //                                  ...
-        //                      3 ---------->...
+        // structure look like
+        // counterMap --------> 1 ---------> 2
+        // 3
+        // ...
+        // 2 ---------> 1
+        // 3
+        // ...
+        // 3 ---------->...
         public void scan(SemanticEvent event) {
-            //appear before, so we update all counters
-            //phase 1:
-            Integer occ = occurance.get(event);
-            occurance.put(event, occ + 1);
-            if (occurance.get(event) >= 1) {
-                for (Map.Entry<SemanticEvent, Integer> entry : counterMap.get(event).entrySet()) {
-                    if (entry.getValue() <= 0) { // p -> p
-                        entry.setValue(entry.getValue() - 1);
-                    } else {
-                        entry.setValue(0);
-                    }
-                }
+            // appear before, so we update all counters
+            // phase 1:
+            for (Map.Entry<SemanticEvent, Integer> entry : counterMap.get(event).entrySet()) {
+                // if (entry.getValue() >= 0)
+                entry.setValue(entry.getValue() + 1);
             }
-            // for (Map.Entry<SemanticEvent, Integer> entry : counterMap.get(event).entrySet()) {
-            //     //if (entry.getValue() >= 0)
-            //     entry.setValue(entry.getValue() + 1);
-            // }
 
-            //phase 2:
+            // phase 2:
             for (SemanticEvent event1 : counterMap.keySet()) {
+                // If same function call (maybe different time), do not discrement counter
                 if (event.equals(event1))
                     continue;
 
                 Integer val = counterMap.get(event1).get(event);
-                if (val >= 0)
-                    counterMap.get(event1).put(event, val + 1); // p -> q is valid when val > 0
+                if (val > 0)
+                    counterMap.get(event1).put(event, val - 1);
             }
         }
 
-        //check the after scan state, and judge
+        // check the after scan state, and judge
         public List<Invariant> postscan() {
-            List<Invariant> lst= new ArrayList<>();
-            for(Map.Entry<SemanticEvent, Map<SemanticEvent, Integer>> entry: counterMap.entrySet())
-            {
-                for(Map.Entry<SemanticEvent, Integer> subEntry: entry.getValue().entrySet())
-                {
-                    if(subEntry.getValue() > 0)
-                    {
+            List<Invariant> lst = new ArrayList<>();
+            for (Map.Entry<SemanticEvent, Map<SemanticEvent, Integer>> entry : counterMap.entrySet()) {
+                for (Map.Entry<SemanticEvent, Integer> subEntry : entry.getValue().entrySet()) {
+                    if (subEntry.getValue() == 0) {
                         Invariant inv = genInv(new Context(
                                 entry.getKey(),
-                                subEntry.getKey()
-                        ));
-                        if(inv!=null)
+                                subEntry.getKey()));
+                        if (inv != null)
                             lst.add(inv);
                     }
                 }
