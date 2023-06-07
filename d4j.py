@@ -58,10 +58,13 @@ D4J_PROJECTS=(
 )
 
 def run(project:str):
+    print(f'Running {project}...')
     result=subprocess.run(['python3','run.py',project],stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
 
     with open(f'd4j_logs/{project}.log','w') as f:
         f.write(result.stdout.decode('utf-8'))
+
+    print(f'Finished {project}!')
 
 if __name__=='__main__':
     for project in D4J_PROJECTS:
