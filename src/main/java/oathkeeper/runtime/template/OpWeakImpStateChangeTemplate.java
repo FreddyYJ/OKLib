@@ -2,10 +2,11 @@ package oathkeeper.runtime.template;
 
 import oathkeeper.runtime.event.OpTriggerEvent;
 import oathkeeper.runtime.event.SemanticEvent;
+import oathkeeper.runtime.event.StateUpdateEvent;
 import oathkeeper.runtime.invariant.Context;
 import oathkeeper.runtime.invariant.Invariant;
 
-public class OpWeakImpOpTemplate extends EventWeakImpEventTemplate {
+public class OpWeakImpStateChangeTemplate extends EventWeakImpEventTemplate {
     // semantics: for all op p, there should be subsequent op q invoked
     // p⇒q
     // allow q => q, q => p
@@ -13,7 +14,7 @@ public class OpWeakImpOpTemplate extends EventWeakImpEventTemplate {
 
     @Override
     public String getTemplateName() {
-        return "OpWeakImpOpTemplate";
+        return "OpWeakImpStateChangeTemplate";
     }
 
     @Override
@@ -25,12 +26,12 @@ public class OpWeakImpOpTemplate extends EventWeakImpEventTemplate {
     @Override
     public boolean checkRightEventClass(SemanticEvent event)
     {
-        return event instanceof OpTriggerEvent;
+        return event instanceof StateUpdateEvent;
     }
 
     @Override
     public Invariant genInv(Context context) {
-        return new Invariant(new OpWeakImpOpTemplate(), context);
+        return new Invariant(new OpWeakImpStateChangeTemplate(), context);
     }
 
 }

@@ -21,6 +21,12 @@ public class EventWeakImpEventTemplate extends Template {
     public Invariant genInv(Context context) {
         if(context.left instanceof OpTriggerEvent && context.right instanceof OpTriggerEvent)
             return new Invariant(new OpWeakImpOpTemplate(), context);
+        else if (context.left instanceof OpTriggerEvent && context.right instanceof StateUpdateEvent)
+            return new Invariant(new OpWeakImpStateChangeTemplate(), context);
+        else if (context.left instanceof StateUpdateEvent && context.right instanceof OpTriggerEvent)
+            return new Invariant(new StateChangeWeakImpOpTemplate(), context);
+        else if (context.left instanceof StateUpdateEvent && context.right instanceof StateUpdateEvent)
+            return new Invariant(new StateChangeWeakImpStateChangeTemplate(), context);
         else
             return null;
     }
@@ -35,10 +41,13 @@ public class EventWeakImpEventTemplate extends Template {
         Map<SemanticEvent, Map<SemanticEvent, Integer>> counterMap = new HashMap<>();
         Map<SemanticEvent, Map<SemanticEvent, Integer>> newCounterMap = new HashMap<>();
         Map<SemanticEvent, Integer> occurance = new HashMap<>();
+        int scanCount = 0;
+        Map<SemanticEvent, Integer> scanCountMap = new HashMap<>();
 
         public void prescan(Set<SemanticEvent> eventSet) {
             for (SemanticEvent event : eventSet) {
                 occurance.put(event, 0);
+                scanCountMap.put(event, 0);
             }
             for (SemanticEvent event : eventSet) {
                 counterMap.put(event, new HashMap<>());
@@ -67,28 +76,30 @@ public class EventWeakImpEventTemplate extends Template {
             // phase 1:
             Integer occ = occurance.get(event);
             occurance.put(event, occ + 1);
-            if (occurance.get(event) >= 1) {
+            scanCount++;
+            Integer scanCountLocal = scanCountMap.get(event);
+            scanCountMap.put(event, scanCount);
+
+            if (occurance.get(event) > 1) {
                 for (Map.Entry<SemanticEvent, Integer> entry : counterMap.get(event).entrySet()) {
                     if (entry.getValue() <= 0) { // p -> p
-                        entry.setValue(entry.getValue() - 1);
+                        entry.setValue(entry.getValue() - 1); // p -> p is detected in this event: remove
                     } else {
-                        entry.setValue(0);
+                        entry.setValue(0);  // p -> q -> p, reset counter
                     }
                 }
             }
-            // for (Map.Entry<SemanticEvent, Integer> entry :
-            // counterMap.get(event).entrySet()) {
-            // //if (entry.getValue() >= 0)
-            // entry.setValue(entry.getValue() + 1);
-            // }
 
             // phase 2:
             for (SemanticEvent event1 : counterMap.keySet()) {
                 if (event.equals(event1))
                     continue;
+                Integer tmp = scanCountMap.get(event1);
+                if (scanCountMap.get(event1) <= scanCountLocal)
+                    continue;
 
                 Integer val = counterMap.get(event1).get(event);
-                if (val >= 0)
+                if (val >= 0) // If p -> p not happend, then p -> q can be valid
                     counterMap.get(event1).put(event, val + 1); // p -> q is valid when val > 0
             }
         }
@@ -148,6 +159,7 @@ public class EventWeakImpEventTemplate extends Template {
         }
 
         public Invariant.InvState getRetVal() {
+            // return Invariant.InvState.PASS;
             if(!state.ifHold)
                 return Invariant.InvState.FAIL;
             else{

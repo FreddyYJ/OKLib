@@ -12,6 +12,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.List;
 
+import java.io.PrintWriter;
+
 public class TestInferAlgorithmRealTraces {
 
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
@@ -41,8 +43,14 @@ public class TestInferAlgorithmRealTraces {
     public void testInferredInvsCannotPassPatchedTracesBug() {
         //from HBASE-4797
         List<Invariant> invs = TestUtils.loadAndInfer(FileLayoutManager.getPathForTestRealTracesDir()
-                      +"/"+"org.apache.hadoop.hbase.regionserver.TestHRegion@testSkipRecoveredEditsReplayAllIgnored");
-
+                + "/" + "org.apache.hadoop.hbase.regionserver.TestHRegion@testSkipRecoveredEditsReplayAllIgnored");
+        // try {
+        //     PrintWriter pw = new PrintWriter("output.txt", "UTF-8");
+        //     pw.println(errContent.toString());
+        //     pw.close();
+        // } catch (Exception e) {
+        // }
+               
         Assert.assertFalse("output should not give errors when checking result sanity",outContent.toString().contains("[ERROR]"));
         Assert.assertFalse("output should not give errors when checking result sanity",errContent.toString().contains("[ERROR]"));
 
