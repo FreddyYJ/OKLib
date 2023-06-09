@@ -7,12 +7,17 @@ import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import oathkeeper.tool.InvMerger;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -135,6 +140,58 @@ public class TestEngine {
         System.exit(0);
     }
 
+    private Map<String, List<String>> d4jTestMethods= new HashMap<>();
+    public TestEngine() {
+        String workdir=System.getProperty("ok.target_system_abs_path");
+        if (workdir.contains("buggy")) {
+            try {
+                FileReader reader=new FileReader(workdir+"/all_tests");
+                BufferedReader br=new BufferedReader(reader);
+                String line;
+
+                while ((line=br.readLine())!=null) {
+                    int index=line.indexOf("(");
+                    String clazz=line.substring(index+1, line.length()-1);
+                    String method=line.substring(0, index);
+                    if (!d4jTestMethods.containsKey(clazz)) {
+                        d4jTestMethods.put(clazz, new ArrayList<>());
+                    }
+                    d4jTestMethods.get(clazz).add(method);
+                }
+
+                br.close();
+                reader.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.exit(1);
+            }
+        }
+    }
+
+    public void execD4JTest(String className) {
+        System.out.println("execD4JTest for "+className);
+        try {
+            String command="defects4j test";
+            int totalTests=0;
+            for (String method:d4jTestMethods.get(className)) {
+                command+=" -t "+className+"::"+method;
+                totalTests++;
+            }
+
+            ProcessBuilder builder = new ProcessBuilder(command.split(" "));
+            Process process=builder.inheritIO().start();
+            int returnCode=process.waitFor();
+        } catch (InterruptedException e) {
+            System.exit(1);
+        } catch (IOException e) {
+            System.exit(1);
+        }
+    }
+
+    public boolean isD4J() {
+        return !d4jTestMethods.isEmpty();
+    }
+
     public static void main(String... args) {
         TestEngine testEngine = new TestEngine();
         testEngine.configManager.initConfig();
@@ -154,7 +211,12 @@ public class TestEngine {
                 testEngine.checker = new RuntimeChecker();
                 testEngine.checker.prepare();
             }
-            testEngine.execSingleTest(System.getProperty("ok.testname"));
+
+            // if (testEngine.isD4J()) {
+            //     testEngine.execD4JTest(System.getProperty("ok.testname"));
+            // }
+            // else
+                testEngine.execSingleTest(System.getProperty("ok.testname"));
         }
         else {
             //main entry
