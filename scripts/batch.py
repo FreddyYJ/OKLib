@@ -36,7 +36,8 @@ def main(args: List[str]):
   pool=mp.Pool(processes=(len(bugids)))
   for bugid in bugids:
     print(f"Start {bugid}")
-    pool.apply_async(run, args=(bugid,))
+    run(bugid)
+    # pool.apply_async(run, args=(bugid,))
   pool.close()
   pool.join()
 
